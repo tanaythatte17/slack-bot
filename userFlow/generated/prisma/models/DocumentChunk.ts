@@ -37,10 +37,12 @@ export type DocumentChunkSumAggregateOutputType = {
 export type DocumentChunkMinAggregateOutputType = {
   id: string | null
   workspace_id: string | null
-  content: string | null
   source_notion_id: string | null
   source_url: string | null
   source_title: string | null
+  notion_block_id: string | null
+  content_hash: string | null
+  content: string | null
   chunk_index: number | null
   created_at: Date | null
 }
@@ -48,10 +50,12 @@ export type DocumentChunkMinAggregateOutputType = {
 export type DocumentChunkMaxAggregateOutputType = {
   id: string | null
   workspace_id: string | null
-  content: string | null
   source_notion_id: string | null
   source_url: string | null
   source_title: string | null
+  notion_block_id: string | null
+  content_hash: string | null
+  content: string | null
   chunk_index: number | null
   created_at: Date | null
 }
@@ -59,10 +63,13 @@ export type DocumentChunkMaxAggregateOutputType = {
 export type DocumentChunkCountAggregateOutputType = {
   id: number
   workspace_id: number
-  content: number
   source_notion_id: number
   source_url: number
   source_title: number
+  notion_block_id: number
+  heading_path: number
+  content_hash: number
+  content: number
   chunk_index: number
   created_at: number
   _all: number
@@ -80,10 +87,12 @@ export type DocumentChunkSumAggregateInputType = {
 export type DocumentChunkMinAggregateInputType = {
   id?: true
   workspace_id?: true
-  content?: true
   source_notion_id?: true
   source_url?: true
   source_title?: true
+  notion_block_id?: true
+  content_hash?: true
+  content?: true
   chunk_index?: true
   created_at?: true
 }
@@ -91,10 +100,12 @@ export type DocumentChunkMinAggregateInputType = {
 export type DocumentChunkMaxAggregateInputType = {
   id?: true
   workspace_id?: true
-  content?: true
   source_notion_id?: true
   source_url?: true
   source_title?: true
+  notion_block_id?: true
+  content_hash?: true
+  content?: true
   chunk_index?: true
   created_at?: true
 }
@@ -102,10 +113,13 @@ export type DocumentChunkMaxAggregateInputType = {
 export type DocumentChunkCountAggregateInputType = {
   id?: true
   workspace_id?: true
-  content?: true
   source_notion_id?: true
   source_url?: true
   source_title?: true
+  notion_block_id?: true
+  heading_path?: true
+  content_hash?: true
+  content?: true
   chunk_index?: true
   created_at?: true
   _all?: true
@@ -200,10 +214,13 @@ export type DocumentChunkGroupByArgs<ExtArgs extends runtime.Types.Extensions.In
 export type DocumentChunkGroupByOutputType = {
   id: string
   workspace_id: string
-  content: string
   source_notion_id: string
   source_url: string | null
   source_title: string | null
+  notion_block_id: string
+  heading_path: runtime.JsonValue | null
+  content_hash: string
+  content: string
   chunk_index: number
   created_at: Date
   _count: DocumentChunkCountAggregateOutputType | null
@@ -234,10 +251,13 @@ export type DocumentChunkWhereInput = {
   NOT?: Prisma.DocumentChunkWhereInput | Prisma.DocumentChunkWhereInput[]
   id?: Prisma.UuidFilter<"DocumentChunk"> | string
   workspace_id?: Prisma.StringFilter<"DocumentChunk"> | string
-  content?: Prisma.StringFilter<"DocumentChunk"> | string
   source_notion_id?: Prisma.StringFilter<"DocumentChunk"> | string
   source_url?: Prisma.StringNullableFilter<"DocumentChunk"> | string | null
   source_title?: Prisma.StringNullableFilter<"DocumentChunk"> | string | null
+  notion_block_id?: Prisma.StringFilter<"DocumentChunk"> | string
+  heading_path?: Prisma.JsonNullableFilter<"DocumentChunk">
+  content_hash?: Prisma.StringFilter<"DocumentChunk"> | string
+  content?: Prisma.StringFilter<"DocumentChunk"> | string
   chunk_index?: Prisma.IntFilter<"DocumentChunk"> | number
   created_at?: Prisma.DateTimeFilter<"DocumentChunk"> | Date | string
   workspace?: Prisma.XOR<Prisma.WorkspaceScalarRelationFilter, Prisma.WorkspaceWhereInput>
@@ -246,10 +266,13 @@ export type DocumentChunkWhereInput = {
 export type DocumentChunkOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   workspace_id?: Prisma.SortOrder
-  content?: Prisma.SortOrder
   source_notion_id?: Prisma.SortOrder
   source_url?: Prisma.SortOrderInput | Prisma.SortOrder
   source_title?: Prisma.SortOrderInput | Prisma.SortOrder
+  notion_block_id?: Prisma.SortOrder
+  heading_path?: Prisma.SortOrderInput | Prisma.SortOrder
+  content_hash?: Prisma.SortOrder
+  content?: Prisma.SortOrder
   chunk_index?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   workspace?: Prisma.WorkspaceOrderByWithRelationInput
@@ -257,26 +280,32 @@ export type DocumentChunkOrderByWithRelationInput = {
 
 export type DocumentChunkWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  notion_block_id?: string
   AND?: Prisma.DocumentChunkWhereInput | Prisma.DocumentChunkWhereInput[]
   OR?: Prisma.DocumentChunkWhereInput[]
   NOT?: Prisma.DocumentChunkWhereInput | Prisma.DocumentChunkWhereInput[]
   workspace_id?: Prisma.StringFilter<"DocumentChunk"> | string
-  content?: Prisma.StringFilter<"DocumentChunk"> | string
   source_notion_id?: Prisma.StringFilter<"DocumentChunk"> | string
   source_url?: Prisma.StringNullableFilter<"DocumentChunk"> | string | null
   source_title?: Prisma.StringNullableFilter<"DocumentChunk"> | string | null
+  heading_path?: Prisma.JsonNullableFilter<"DocumentChunk">
+  content_hash?: Prisma.StringFilter<"DocumentChunk"> | string
+  content?: Prisma.StringFilter<"DocumentChunk"> | string
   chunk_index?: Prisma.IntFilter<"DocumentChunk"> | number
   created_at?: Prisma.DateTimeFilter<"DocumentChunk"> | Date | string
   workspace?: Prisma.XOR<Prisma.WorkspaceScalarRelationFilter, Prisma.WorkspaceWhereInput>
-}, "id">
+}, "id" | "notion_block_id">
 
 export type DocumentChunkOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   workspace_id?: Prisma.SortOrder
-  content?: Prisma.SortOrder
   source_notion_id?: Prisma.SortOrder
   source_url?: Prisma.SortOrderInput | Prisma.SortOrder
   source_title?: Prisma.SortOrderInput | Prisma.SortOrder
+  notion_block_id?: Prisma.SortOrder
+  heading_path?: Prisma.SortOrderInput | Prisma.SortOrder
+  content_hash?: Prisma.SortOrder
+  content?: Prisma.SortOrder
   chunk_index?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   _count?: Prisma.DocumentChunkCountOrderByAggregateInput
@@ -292,20 +321,26 @@ export type DocumentChunkScalarWhereWithAggregatesInput = {
   NOT?: Prisma.DocumentChunkScalarWhereWithAggregatesInput | Prisma.DocumentChunkScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"DocumentChunk"> | string
   workspace_id?: Prisma.StringWithAggregatesFilter<"DocumentChunk"> | string
-  content?: Prisma.StringWithAggregatesFilter<"DocumentChunk"> | string
   source_notion_id?: Prisma.StringWithAggregatesFilter<"DocumentChunk"> | string
   source_url?: Prisma.StringNullableWithAggregatesFilter<"DocumentChunk"> | string | null
   source_title?: Prisma.StringNullableWithAggregatesFilter<"DocumentChunk"> | string | null
+  notion_block_id?: Prisma.StringWithAggregatesFilter<"DocumentChunk"> | string
+  heading_path?: Prisma.JsonNullableWithAggregatesFilter<"DocumentChunk">
+  content_hash?: Prisma.StringWithAggregatesFilter<"DocumentChunk"> | string
+  content?: Prisma.StringWithAggregatesFilter<"DocumentChunk"> | string
   chunk_index?: Prisma.IntWithAggregatesFilter<"DocumentChunk"> | number
   created_at?: Prisma.DateTimeWithAggregatesFilter<"DocumentChunk"> | Date | string
 }
 
 export type DocumentChunkUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   workspace?: Prisma.WorkspaceUpdateOneRequiredWithoutDocument_chunksNestedInput
@@ -314,20 +349,26 @@ export type DocumentChunkUpdateInput = {
 export type DocumentChunkUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspace_id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DocumentChunkUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -335,10 +376,13 @@ export type DocumentChunkUpdateManyMutationInput = {
 export type DocumentChunkUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   workspace_id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -356,10 +400,13 @@ export type DocumentChunkOrderByRelationAggregateInput = {
 export type DocumentChunkCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   workspace_id?: Prisma.SortOrder
-  content?: Prisma.SortOrder
   source_notion_id?: Prisma.SortOrder
   source_url?: Prisma.SortOrder
   source_title?: Prisma.SortOrder
+  notion_block_id?: Prisma.SortOrder
+  heading_path?: Prisma.SortOrder
+  content_hash?: Prisma.SortOrder
+  content?: Prisma.SortOrder
   chunk_index?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -371,10 +418,12 @@ export type DocumentChunkAvgOrderByAggregateInput = {
 export type DocumentChunkMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   workspace_id?: Prisma.SortOrder
-  content?: Prisma.SortOrder
   source_notion_id?: Prisma.SortOrder
   source_url?: Prisma.SortOrder
   source_title?: Prisma.SortOrder
+  notion_block_id?: Prisma.SortOrder
+  content_hash?: Prisma.SortOrder
+  content?: Prisma.SortOrder
   chunk_index?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -382,10 +431,12 @@ export type DocumentChunkMaxOrderByAggregateInput = {
 export type DocumentChunkMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   workspace_id?: Prisma.SortOrder
-  content?: Prisma.SortOrder
   source_notion_id?: Prisma.SortOrder
   source_url?: Prisma.SortOrder
   source_title?: Prisma.SortOrder
+  notion_block_id?: Prisma.SortOrder
+  content_hash?: Prisma.SortOrder
+  content?: Prisma.SortOrder
   chunk_index?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -446,40 +497,52 @@ export type DocumentChunkScalarWhereInput = {
   NOT?: Prisma.DocumentChunkScalarWhereInput | Prisma.DocumentChunkScalarWhereInput[]
   id?: Prisma.UuidFilter<"DocumentChunk"> | string
   workspace_id?: Prisma.StringFilter<"DocumentChunk"> | string
-  content?: Prisma.StringFilter<"DocumentChunk"> | string
   source_notion_id?: Prisma.StringFilter<"DocumentChunk"> | string
   source_url?: Prisma.StringNullableFilter<"DocumentChunk"> | string | null
   source_title?: Prisma.StringNullableFilter<"DocumentChunk"> | string | null
+  notion_block_id?: Prisma.StringFilter<"DocumentChunk"> | string
+  heading_path?: Prisma.JsonNullableFilter<"DocumentChunk">
+  content_hash?: Prisma.StringFilter<"DocumentChunk"> | string
+  content?: Prisma.StringFilter<"DocumentChunk"> | string
   chunk_index?: Prisma.IntFilter<"DocumentChunk"> | number
   created_at?: Prisma.DateTimeFilter<"DocumentChunk"> | Date | string
 }
 
 export type DocumentChunkUpdateWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DocumentChunkUncheckedUpdateWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type DocumentChunkUncheckedUpdateManyWithoutWorkspaceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  content?: Prisma.StringFieldUpdateOperationsInput | string
   source_notion_id?: Prisma.StringFieldUpdateOperationsInput | string
   source_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source_title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notion_block_id?: Prisma.StringFieldUpdateOperationsInput | string
+  heading_path?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  content_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  content?: Prisma.StringFieldUpdateOperationsInput | string
   chunk_index?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -489,10 +552,13 @@ export type DocumentChunkUncheckedUpdateManyWithoutWorkspaceInput = {
 export type DocumentChunkSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   workspace_id?: boolean
-  content?: boolean
   source_notion_id?: boolean
   source_url?: boolean
   source_title?: boolean
+  notion_block_id?: boolean
+  heading_path?: boolean
+  content_hash?: boolean
+  content?: boolean
   chunk_index?: boolean
   created_at?: boolean
   workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
@@ -502,10 +568,13 @@ export type DocumentChunkSelect<ExtArgs extends runtime.Types.Extensions.Interna
 export type DocumentChunkSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   workspace_id?: boolean
-  content?: boolean
   source_notion_id?: boolean
   source_url?: boolean
   source_title?: boolean
+  notion_block_id?: boolean
+  heading_path?: boolean
+  content_hash?: boolean
+  content?: boolean
   chunk_index?: boolean
   created_at?: boolean
   workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
@@ -514,15 +583,18 @@ export type DocumentChunkSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
 export type DocumentChunkSelectScalar = {
   id?: boolean
   workspace_id?: boolean
-  content?: boolean
   source_notion_id?: boolean
   source_url?: boolean
   source_title?: boolean
+  notion_block_id?: boolean
+  heading_path?: boolean
+  content_hash?: boolean
+  content?: boolean
   chunk_index?: boolean
   created_at?: boolean
 }
 
-export type DocumentChunkOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspace_id" | "content" | "source_notion_id" | "source_url" | "source_title" | "chunk_index" | "created_at", ExtArgs["result"]["documentChunk"]>
+export type DocumentChunkOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspace_id" | "source_notion_id" | "source_url" | "source_title" | "notion_block_id" | "heading_path" | "content_hash" | "content" | "chunk_index" | "created_at", ExtArgs["result"]["documentChunk"]>
 export type DocumentChunkInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   workspace?: boolean | Prisma.WorkspaceDefaultArgs<ExtArgs>
 }
@@ -538,10 +610,13 @@ export type $DocumentChunkPayload<ExtArgs extends runtime.Types.Extensions.Inter
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     workspace_id: string
-    content: string
     source_notion_id: string
     source_url: string | null
     source_title: string | null
+    notion_block_id: string
+    heading_path: runtime.JsonValue | null
+    content_hash: string
+    content: string
     chunk_index: number
     created_at: Date
   }, ExtArgs["result"]["documentChunk"]>
@@ -899,10 +974,13 @@ export interface Prisma__DocumentChunkClient<T, Null = never, ExtArgs extends ru
 export interface DocumentChunkFieldRefs {
   readonly id: Prisma.FieldRef<"DocumentChunk", 'String'>
   readonly workspace_id: Prisma.FieldRef<"DocumentChunk", 'String'>
-  readonly content: Prisma.FieldRef<"DocumentChunk", 'String'>
   readonly source_notion_id: Prisma.FieldRef<"DocumentChunk", 'String'>
   readonly source_url: Prisma.FieldRef<"DocumentChunk", 'String'>
   readonly source_title: Prisma.FieldRef<"DocumentChunk", 'String'>
+  readonly notion_block_id: Prisma.FieldRef<"DocumentChunk", 'String'>
+  readonly heading_path: Prisma.FieldRef<"DocumentChunk", 'Json'>
+  readonly content_hash: Prisma.FieldRef<"DocumentChunk", 'String'>
+  readonly content: Prisma.FieldRef<"DocumentChunk", 'String'>
   readonly chunk_index: Prisma.FieldRef<"DocumentChunk", 'Int'>
   readonly created_at: Prisma.FieldRef<"DocumentChunk", 'DateTime'>
 }

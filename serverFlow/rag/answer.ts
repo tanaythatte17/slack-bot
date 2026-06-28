@@ -38,6 +38,7 @@ export async function getRagAnswer(
   // STEP 2 — retrieve chunks
   const chunks = await searchChunks(
     questionEmbedding,
+    question,
     workspaceId
   );
 
@@ -69,6 +70,7 @@ ${question}
 `;
 
   // STEP 6 — generate answer
+  console.log("Prompt is : ", prompt);
   const result = await chatModel.generateContent(prompt);
 
   const answer = result.response.text();
