@@ -4,7 +4,7 @@ import type {
   BlockObjectResponse,
   RichTextItemResponse,
   PageObjectResponse,
-} from "@notionhq/client/build/src/api-endpoints";
+} from "@notionhq/client";
 import {prisma} from "../lib/prisma"
 
 export type NotionPageMeta = {

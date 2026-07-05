@@ -5,8 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "tsx watch server.ts"
+    "dev": "tsx watch server.ts",
+    "build": "tsup server.ts --format esm --target node20 --out-dir dist",
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,7 @@
     "nodemon": "^3.1.14",
     "prisma": "^7.8.0",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.2"
   }
