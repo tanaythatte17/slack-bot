@@ -1,13 +1,7 @@
-node_modules
-# Keep environment variables out of version control
+node_modules/
 .env
+.vscode/
 
-/generated/prisma
-
-/generated/prisma
-
-/prisma/migrations
-
-/userFlow/generated
-
-.vscode
+/generated/
+/prisma/migrations/
+/userFlow/generated/
