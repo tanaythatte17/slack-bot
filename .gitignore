@@ -2,6 +2,5 @@ node_modules/
 .env
 .vscode/
 
-/generated/
-/prisma/migrations/
-/userFlow/generated/
+userFlow/generated/
+userFlow/prisma/migrations/
