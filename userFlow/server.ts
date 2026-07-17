@@ -23,7 +23,7 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('Hello, World!');
 });
-//testing
+
 app.use('/auth', authRoutes);
 app.use('/notion', notionIndexRoutes);
 app.use('/stats', statsRoutes);
