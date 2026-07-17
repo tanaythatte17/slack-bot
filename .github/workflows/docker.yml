@@ -1,0 +1,54 @@
+name: Build & Push Images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "userFlow/**"
+      - "serverFlow/**"
+      - ".github/workflows/**"
+
+jobs:
+  build-userflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+            -u "${{ secrets.GHCR_USERNAME }}" \
+            --password-stdin
+
+      - name: Build userFlow image
+        run: |
+          docker build \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/userflow:latest \
+            ./userFlow
+
+      - name: Push userFlow image
+        run: |
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/userflow:latest
+
+  build-serverflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+            -u "${{ secrets.GHCR_USERNAME }}" \
+            --password-stdin
+
+      - name: Build serverFlow image
+        run: |
+          docker build \
+            -t ghcr.io/${{ secrets.GHCR_USERNAME }}/serverflow:latest \
+            ./serverFlow
+
+      - name: Push serverFlow image
+        run: |
+          docker push ghcr.io/${{ secrets.GHCR_USERNAME }}/serverflow:latest
