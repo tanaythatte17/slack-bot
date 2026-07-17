@@ -54,6 +54,33 @@ export type WorkspaceStats = {
   totalChunks: number;
 };
 
+export type DocumentItem = {
+  pageId: string;
+  name: string;
+  status: 'in_progress' | 'completed' | 'failed';
+};
+
+export type DocumentsResponse = {
+  documents: DocumentItem[];
+};
+
+export type SSEDocumentEvent = {
+  type: 'document';
+  action: 'updated';
+  data: DocumentItem;
+  timestamp: string;
+};
+
+export type SSESyncStatusEvent = {
+  type: 'syncStatus';
+  status: 'started' | 'completed' | 'error';
+  message: string;
+  details?: Record<string, unknown>;
+  timestamp: string;
+};
+
+export type SSEEvent = SSEDocumentEvent | SSESyncStatusEvent | { type: 'connected' };
+
 export const api = {
   getSlackAuthUrl: () => request<AuthUrlResponse>('/auth/slack/auth-url'),
   getSlackBotAuthUrl: () => request<AuthUrlResponse>('/auth/slack/bot/auth-url'),
@@ -62,4 +89,28 @@ export const api = {
   triggerNotionIndex: () =>
     request<IndexResponse>('/notion/index', { method: 'POST' }),
   getWorkspaceStats: () => request<WorkspaceStats>('/stats'),
+  getDocuments: () => request<DocumentsResponse>('/notion/documents'),
+  subscribeToSyncEvents: (
+    onEvent: (event: SSEEvent) => void,
+    onError?: () => void
+  ) => {
+    const source = new EventSource(`${API_URL}/notion/events`, {
+      withCredentials: true,
+    });
+
+    source.onmessage = (message) => {
+      try {
+        const event = JSON.parse(message.data) as SSEEvent;
+        onEvent(event);
+      } catch {
+        // ignore malformed events
+      }
+    };
+
+    source.onerror = () => {
+      onError?.();
+    };
+
+    return () => source.close();
+  },
 };

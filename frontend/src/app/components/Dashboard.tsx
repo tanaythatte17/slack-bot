@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, type DocumentItem, type SSEEvent } from '@/lib/api';
 import { NotionLogo, SlackLogo } from '@/app/components/BrandLogos';
 import { toast } from 'sonner';
 import {
@@ -34,10 +34,11 @@ export default function Dashboard() {
   const [aiQuery, setAiQuery] = useState('');
   const [isConnectingNotion, setIsConnectingNotion] = useState(false);
   const [isConnectingSlack, setIsConnectingSlack] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [indexMessage, setIndexMessage] = useState<string | null>(null);
   const [indexedDocuments, setIndexedDocuments] = useState<number | null>(null);
   const [totalChunks, setTotalChunks] = useState<number | null>(null);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchStats = async () => {
     try {
@@ -51,27 +52,22 @@ export default function Dashboard() {
     }
   };
 
+  const fetchDocuments = async () => {
+    try {
+      const { documents: docs } = await api.getDocuments();
+      setDocuments(docs);
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to load documents';
+      toast.error(message);
+    }
+  };
+
   const formatCount = (value: number | null) =>
     value === null ? '—' : value.toLocaleString();
 
   const menuItems = [
     { id: 'overview', icon: LayoutDashboard, label: 'Dashboard' },
-  ];
-
-  const documents = [
-    { name: 'Engineering Runbook', source: 'Notion', synced: '2 hours ago', chunks: 142, status: 'synced' },
-    { name: 'HR Policy Guide', source: 'Notion', synced: '5 hours ago', chunks: 89, status: 'synced' },
-    { name: 'Product Roadmap 2026', source: 'Notion', synced: '1 day ago', chunks: 56, status: 'synced' },
-    { name: 'Sales Playbook', source: 'Notion', synced: '2 days ago', chunks: 124, status: 'synced' },
-    { name: 'Customer Onboarding', source: 'Notion', synced: 'Syncing...', chunks: 34, status: 'syncing' },
-  ];
-
-  const syncActivity = [
-    { action: 'Indexed Engineering Runbook', time: '2 hours ago', status: 'success' },
-    { action: 'Updated Leave Policy', time: '5 hours ago', status: 'success' },
-    { action: 'Embedding generation complete', time: '1 day ago', status: 'success' },
-    { action: 'Synced Product Roadmap', time: '1 day ago', status: 'success' },
-    { action: 'Connected Notion workspace', time: '3 days ago', status: 'success' },
   ];
 
   const handleConnectNotion = async () => {
@@ -105,11 +101,9 @@ export default function Dashboard() {
       const result = await api.triggerNotionIndex();
       setIndexMessage(result.message);
       toast.success(result.message);
-      await fetchStats();
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Indexing failed';
       toast.error(message);
-    } finally {
       setIsSyncing(false);
     }
   };
@@ -117,7 +111,44 @@ export default function Dashboard() {
   useEffect(() => {
     refreshSession();
     fetchStats();
+    fetchDocuments();
   }, [refreshSession]);
+
+  useEffect(() => {
+    if (!session?.userId) return;
+
+    const unsubscribe = api.subscribeToSyncEvents((event: SSEEvent) => {
+      if (event.type === 'document') {
+        setDocuments((prev) => {
+          const existing = prev.find((doc) => doc.pageId === event.data.pageId);
+          if (existing) {
+            return prev.map((doc) =>
+              doc.pageId === event.data.pageId ? event.data : doc
+            );
+          }
+          return [...prev, event.data];
+        });
+      }
+
+      if (event.type === 'syncStatus') {
+        if (event.status === 'started') {
+          setIsSyncing(true);
+        }
+        if (event.status === 'completed') {
+          setIsSyncing(false);
+          fetchStats();
+          fetchDocuments();
+          toast.success(event.message);
+        }
+        if (event.status === 'error') {
+          setIsSyncing(false);
+          toast.error(event.message);
+        }
+      }
+    });
+
+    return unsubscribe;
+  }, [session?.userId]);
 
   const handleAiQuery = () => {
     if (!aiQuery.trim()) return;
@@ -373,7 +404,7 @@ export default function Dashboard() {
                     className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-medium hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-60"
                   >
                     <RefreshCw className={`size-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Starting...' : 'Sync Now'}
+                    {isSyncing ? 'Syncing...' : 'Sync Now'}
                   </button>
                 </div>
 
@@ -385,46 +416,52 @@ export default function Dashboard() {
                           Document Name
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Source
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Last Synced
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Chunks
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                           Status
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {documents.map((doc, i) => (
-                        <tr key={i} className="hover:bg-secondary/50 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <FileText className="size-5 text-blue-400" />
-                              <span className="font-medium">{doc.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{doc.source}</td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{doc.synced}</td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground">{doc.chunks}</td>
-                          <td className="px-6 py-4">
-                            {doc.status === 'synced' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs">
-                                <CheckCircle2 className="size-3" />
-                                Synced
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs">
-                                <RefreshCw className="size-3 animate-spin" />
-                                Syncing
-                              </span>
-                            )}
+                      {documents.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={2}
+                            className="px-6 py-8 text-center text-sm text-muted-foreground"
+                          >
+                            {notionConnected
+                              ? 'No documents indexed yet. Click Sync Now to start.'
+                              : 'Connect Notion to index documents.'}
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        documents.map((doc) => (
+                          <tr key={doc.pageId} className="hover:bg-secondary/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <FileText className="size-5 text-blue-400" />
+                                <span className="font-medium">{doc.name}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              {doc.status === 'completed' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/10 text-green-400 text-xs">
+                                  <CheckCircle2 className="size-3" />
+                                  Completed
+                                </span>
+                              ) : doc.status === 'in_progress' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs">
+                                  <RefreshCw className="size-3 animate-spin" />
+                                  In Progress
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-500/10 text-red-400 text-xs">
+                                  <XCircle className="size-3" />
+                                  Failed
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

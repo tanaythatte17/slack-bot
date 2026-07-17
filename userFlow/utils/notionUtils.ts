@@ -41,6 +41,54 @@ export type ChunkToEmbed = Chunk & {
 
 const MAX_CHUNK_CHARS = 1200;
 
+export async function getNotionPages(
+  notion: Client
+): Promise<NotionPageMeta[]> {
+  return getAllPages(notion);
+}
+
+export async function extractPageChunks(
+  notion: Client,
+  workspaceId: string,
+  page: NotionPageMeta
+): Promise<ChunkToEmbed[]> {
+  const blocks = await getAllBlocksFlat(notion, page.id);
+  const chunks = chunkBlocks(blocks);
+
+  const existingRows = await prisma.documentChunk.findMany({
+    where: {
+      workspace_id: workspaceId,
+      source_notion_id: page.id,
+    },
+    select: {
+      notion_block_id: true,
+      content_hash: true,
+    },
+  });
+
+  const existingMap = new Map(
+    existingRows.map((row) => [row.notion_block_id, row.content_hash])
+  );
+
+  const changedChunks: ChunkToEmbed[] = [];
+
+  for (const chunk of chunks) {
+    const hash = generateHash(chunk.content);
+    const existingHash = existingMap.get(chunk.chunkId);
+
+    if (existingHash === hash) continue;
+
+    changedChunks.push({
+      ...chunk,
+      hash,
+      pageId: page.id,
+      pageTitle: page.title,
+    });
+  }
+
+  return changedChunks;
+}
+
 export async function extractNotionChunks(
   notion: Client,
   workspaceId: string
@@ -49,40 +97,8 @@ export async function extractNotionChunks(
   const changedChunks: ChunkToEmbed[] = [];
 
   for (const page of pages) {
-    const blocks = await getAllBlocksFlat(notion, page.id);
-    const chunks = chunkBlocks(blocks);
-
-    const existingRows = await prisma.documentChunk.findMany({
-      where: {
-        workspace_id: workspaceId,
-        source_notion_id: page.id,
-      },
-      select: {
-        notion_block_id: true,
-        content_hash: true,
-      },
-    });
-
-    const existingMap = new Map(
-      existingRows.map((row) => [
-        row.notion_block_id,
-        row.content_hash,
-      ])
-    );
-
-    for (const chunk of chunks) {
-      const hash = generateHash(chunk.content);
-      const existingHash = existingMap.get(chunk.chunkId);
-
-      if (existingHash === hash) continue;
-
-      changedChunks.push({
-        ...chunk,
-        hash,
-        pageId: page.id,
-        pageTitle: page.title,
-      });
-    }
+    const pageChunks = await extractPageChunks(notion, workspaceId, page);
+    changedChunks.push(...pageChunks);
   }
 
   return changedChunks;

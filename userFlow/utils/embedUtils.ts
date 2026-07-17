@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import {prisma} from "../lib/prisma"
-import type { ChunkToEmbed } from "./notionIndexUtils";
+import type { ChunkToEmbed } from "./notionUtils";
 
 dotenv.config();
 
