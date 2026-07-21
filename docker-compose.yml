@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  userflow:
+    container_name: userflow
+    image: ghcr.io/tanaythatte17/userflow:latest
+    restart: always
+    env_file:
+      - ./userflow/.env
+    ports:
+      - "127.0.0.1:3002:3000"
+
+  serverflow:
+    container_name: serverflow
+    image: ghcr.io/tanaythatte17/serverflow:latest
+    restart: always
+    env_file:
+      - ./serverflow/.env
+    ports:
+      - "127.0.0.1:3001:3000"
+
+  watchtower:
+    container_name: watchtower
+    image: nickfedor/watchtower
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/tanay/.docker:/config:ro
+    environment:
+      DOCKER_CONFIG: /config
+      WATCHTOWER_REGISTRY_AUTH: "true"
+      WATCHTOWER_POLL_INTERVAL: "30"
+      WATCHTOWER_CLEANUP: "true"
+    command: userflow serverflow
