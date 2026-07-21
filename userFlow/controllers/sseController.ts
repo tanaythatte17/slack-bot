@@ -6,11 +6,11 @@ export const subscribeToEvents = async (req: any, res: any) => {
   const userId = req.user.id;
   const workspaceId = req.user.workspaceId;
 
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.flushHeaders?.();
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:5173');
+  res.setHeader('Access-Control-Allow-Headers', 'Cache-Control');
 
   const clientId = crypto.randomUUID();
   sseService.addClient(userId, clientId, res);
