@@ -33,8 +33,6 @@ async function vectorSearch(
 ): Promise<Chunk[]> {
   const vectorStr = JSON.stringify(queryEmbedding);
 
-  console.log("Workspace ID:", workspaceId);
-
   const res = await client.query(
     `
     SELECT
@@ -52,30 +50,6 @@ async function vectorSearch(
     `,
     [vectorStr, workspaceId, RETRIEVAL_COUNT]
   );
-
-  console.log("Row count:", res.rows.length);
-  console.log("First row:", res.rows[0]);
-
-  // How many chunks exist for this workspace at all?
-  const countRes = await client.query(
-    `SELECT COUNT(*) FROM "DocumentChunk" WHERE workspace_id = $1`,
-    [workspaceId]
-  );
-  console.log("Total chunks for workspace:", countRes.rows[0].count);
-
-  // How many have embeddings?
-  const embeddingRes = await client.query(
-    `SELECT COUNT(*) FROM "DocumentChunk" WHERE workspace_id = $1 AND embedding IS NOT NULL`,
-    [workspaceId]
-  );
-  console.log("Chunks with embeddings:", embeddingRes.rows[0].count);
-
-  // What does the raw vector distance look like without the similarity calc?
-  const rawRes = await client.query(
-    `SELECT id, embedding IS NOT NULL as has_embedding FROM "DocumentChunk" WHERE workspace_id = $1 LIMIT 3`,
-    [workspaceId]
-  );
-  console.log("Sample rows:", rawRes.rows);
 
   return res.rows.map((r: any) => ({
     ...r,
@@ -118,8 +92,6 @@ async function bm25Search(
     [query, workspaceId, RETRIEVAL_COUNT]
   );
 
-  console.log("Row count:", res.rows.length);
-  console.log("First row:", res.rows[0]);
 
   return res.rows.map((r: any) => ({
     ...r,
@@ -251,8 +223,6 @@ export async function searchChunks(
 ): Promise<Chunk[]> {
   const client = await pool.connect();
 
-  console.log(`Searching chunks for workspace ${workspaceId} with query "${queryText}"`);
-
   try {
     // 1. Dual retrieval in parallel
     const [vectorChunks, bm25Chunks] = await Promise.all([
@@ -260,49 +230,30 @@ export async function searchChunks(
       bm25Search(client, queryText, workspaceId),
     ]);
 
-    console.log(
-      `Vector: ${vectorChunks.length} chunks | BM25: ${bm25Chunks.length} chunks`
-    );
-    console.log(
-      "Vector top results:",
-      vectorChunks.slice(0, 5).map((r) => ({
-        title: r.source_title,
-        similarity: r.similarity,
-        preview: r.content.slice(0, 80),
-      }))
-    );
-
-    // 2. Gate on vector quality before doing any further work
-    // 2. Gate on vector quality
+    //If vector with highest similiarity is below threshold, return empty.
     const bestVectorScore = vectorChunks[0]?.similarity ?? 0;
     if (bestVectorScore < MIN_SIMILARITY_FLOOR) {
       console.log(`Best vector score ${bestVectorScore} below floor, returning empty`);
       return [];
     }
 
+    const relevantVector = vectorChunks.filter(
+      c => c.similarity >= scoreThreshold
+    );
+
     // 3. Merge & dedupe — vector chunk wins on id collision
     const mergedMap = new Map<string, Chunk>();
-    for (const chunk of [...vectorChunks, ...bm25Chunks]) {
+    for (const chunk of [...relevantVector, ...bm25Chunks]) {
       if (!mergedMap.has(chunk.id)) {
         mergedMap.set(chunk.id, chunk);
       }
     }
     const merged = Array.from(mergedMap.values());
 
-    // 4. Apply relative drop filter BEFORE diversification
-    //    Keep chunks within 12% of the best score — cuts noise aggressively
-    const RELATIVE_DROP = 0.12;
-    const scoreThreshold = bestVectorScore - RELATIVE_DROP;
-    const relevant = merged.filter((c) => c.similarity >= scoreThreshold);
-
-    console.log(
-      `After relative drop filter (threshold ${scoreThreshold.toFixed(3)}): ${relevant.length} chunks`
-    );
-
     // 5. Per-page diversification on already-filtered set
     const pageCounts = new Map<string, number>();
     const diversified: Chunk[] = [];
-    for (const chunk of relevant) {
+    for (const chunk of merged) {
       const count = pageCounts.get(chunk.source_notion_id) ?? 0;
       if (count >= MAX_CHUNKS_PER_PAGE) continue;
       diversified.push(chunk);

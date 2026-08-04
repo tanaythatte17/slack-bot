@@ -89,21 +89,6 @@ export async function extractPageChunks(
   return changedChunks;
 }
 
-export async function extractNotionChunks(
-  notion: Client,
-  workspaceId: string
-): Promise<ChunkToEmbed[]> {
-  const pages = await getAllPages(notion);
-  const changedChunks: ChunkToEmbed[] = [];
-
-  for (const page of pages) {
-    const pageChunks = await extractPageChunks(notion, workspaceId, page);
-    changedChunks.push(...pageChunks);
-  }
-
-  return changedChunks;
-}
-
 async function getAllPages(
   notion: Client
 ): Promise<NotionPageMeta[]> {

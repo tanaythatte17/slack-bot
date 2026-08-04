@@ -189,6 +189,14 @@ export const handleSlackInstallCallbackService = async (
   code: string,
   state: string
 ) => {
+  const record = await prisma.oAuthState.findUnique({
+    where: { state },
+  });
+
+  if (!record) {
+    throw new Error("Invalid or expired state");
+  }
+
   const tokenRes = await axios.post(
     "https://slack.com/api/oauth.v2.access",
     new URLSearchParams({
@@ -208,14 +216,6 @@ export const handleSlackInstallCallbackService = async (
 
   if (!data.ok) {
     throw new Error(data.error);
-  }
-
-  const record = await prisma.oAuthState.findUnique({
-    where: { state },
-  });
-
-  if (!record) {
-    throw new Error("Invalid or expired state");
   }
 
   const { workspaceId } = record;

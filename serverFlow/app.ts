@@ -105,7 +105,7 @@ app.message(async ({ message, say }) => {
     if (!workspaceId) {
       throw new Error("Missing workspace ID");
     }
-    console.log(`Received message: "${message.text}" from workspace ${workspaceId}`);
+
     const answer = await getRagAnswer(
       message.text,
       workspaceId
