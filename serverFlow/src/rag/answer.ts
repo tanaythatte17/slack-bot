@@ -1,12 +1,8 @@
-// rag/answer.ts
-
+import "../config/env.ts";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
 
 import { embedText } from "./embed.ts";
 import { searchChunks } from "./search.ts";
-
-dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
