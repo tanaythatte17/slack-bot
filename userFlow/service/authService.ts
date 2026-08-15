@@ -1,6 +1,7 @@
 import axios from "axios";
 import {prisma} from "../lib/prisma"
 import { generateToken } from "../utils/generateToken"
+import { encryptToken } from "../utils/crypto"
 import crypto from "crypto";
 
 export const getSlackAuthUrlService = async () => {
@@ -40,7 +41,6 @@ export const handleSlackCallbackService = async (code: string, res: any) => {
     );
 
     const user = userRes.data;
-    console.log("Authenticated user:", user);
     const slackId = user.sub;
     const email = user.email;
     const name = user.name;
@@ -139,14 +139,12 @@ export const handleNotionCallbackService = async (code: string, state: string) =
 
   const notionData = res.data;
 
-  console.log("Notion OAuth response:", notionData);
-
-  // 3. Store tokens in workspace
+  // 3. Store tokens in workspace (encrypted at rest)
   await prisma.workspace.update({
     where: { id: workspaceId },
     data: {
-      notion_token: notionData.access_token,
-      notion_refresh_token: notionData.refresh_token,
+      notion_token: encryptToken(notionData.access_token),
+      notion_refresh_token: encryptToken(notionData.refresh_token),
       notion_workspace_id: notionData.workspace_id,
     },
   });
@@ -232,7 +230,7 @@ export const handleSlackInstallCallbackService = async (
     where: { id: workspaceId },
     data: {
       team_name: workspaceName,
-      slack_bot_token: botToken,
+      slack_bot_token: encryptToken(botToken),
       slack_bot_user_id: botUserId,
     },
   });

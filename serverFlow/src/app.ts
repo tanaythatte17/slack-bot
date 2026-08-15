@@ -2,6 +2,7 @@ import "./config/env.ts";
 import { App } from "@slack/bolt";
 
 import { pool } from "./config/db.ts";
+import { decryptToken } from "./lib/crypto.ts";
 import { registerAppMentionListener } from "./listeners/appMention.ts";
 import { registerDirectMessageListener } from "./listeners/directMessage.ts";
 
@@ -29,7 +30,7 @@ const app = new App({
     const workspace = result.rows[0];
 
     return {
-      botToken: workspace.slack_bot_token,
+      botToken: decryptToken(workspace.slack_bot_token),
     };
   },
 });

@@ -12,9 +12,13 @@ export interface Chunk {
 }
 
 const MIN_SIMILARITY_FLOOR = 0.58;
+// ts_rank_cd isn't bounded like cosine similarity — this is a rough
+// heuristic to drop near-zero keyword matches, not a calibrated threshold.
+const MIN_BM25_SCORE = 0.01;
 const RETRIEVAL_COUNT = 20;
 const MAX_CHUNKS_PER_PAGE = 2;
 const FINAL_CHUNK_LIMIT = 8;
+const RRF_K = 60;
 const COHERE_API_KEY = process.env.COHERE_API_KEY!;
 
 // ─────────────────────────────────────────────
@@ -100,11 +104,16 @@ async function bm25Search(
 async function expandNeighbors(
   client: any,
   chunks: Chunk[],
-  workspaceId: string
+  workspaceId: string,
+  pageCounts: Map<string, number>
 ): Promise<Chunk[]> {
   const expanded: Chunk[] = [...chunks];
 
   for (const chunk of chunks) {
+    if ((pageCounts.get(chunk.source_notion_id) ?? 0) >= MAX_CHUNKS_PER_PAGE) {
+      continue;
+    }
+
     const res = await client.query(
       `
       SELECT
@@ -128,12 +137,12 @@ async function expandNeighbors(
       ]
     );
 
-    expanded.push(
-      ...res.rows.map((r: Chunk) => ({
-        ...r,
-        retrieval_source: "neighbor" as const,
-      }))
-    );
+    for (const r of res.rows as Chunk[]) {
+      const count = pageCounts.get(chunk.source_notion_id) ?? 0;
+      if (count >= MAX_CHUNKS_PER_PAGE) break;
+      expanded.push({ ...r, retrieval_source: "neighbor" as const });
+      pageCounts.set(chunk.source_notion_id, count + 1);
+    }
   }
 
   return expanded;
@@ -224,27 +233,40 @@ export async function searchChunks(
       bm25Search(client, queryText, workspaceId),
     ]);
 
-    //If vector with highest similiarity is below threshold, return empty.
-    const bestVectorScore = vectorChunks[0]?.similarity ?? 0;
-    if (bestVectorScore < MIN_SIMILARITY_FLOOR) {
-      console.log(`Best vector score ${bestVectorScore} below floor, returning empty`);
+    // 2. Filter each list to its own relevance floor — a weak vector top
+    // hit must not suppress a strong BM25 hit (e.g. exact ticket IDs,
+    // function names, acronyms), and vice versa.
+    const relevantVector = vectorChunks.filter(
+      c => c.similarity >= MIN_SIMILARITY_FLOOR
+    );
+    const relevantBm25 = bm25Chunks.filter(
+      c => c.similarity >= MIN_BM25_SCORE
+    );
+
+    if (relevantVector.length === 0 && relevantBm25.length === 0) {
       return [];
     }
 
-    const relevantVector = vectorChunks.filter(
-      c => c.similarity >= scoreThreshold
-    );
+    // 3. Reciprocal rank fusion — score chunks by rank position in each
+    // list (1/(k + rank)), not by raw similarity, so the two differently
+    // scaled retrieval methods combine fairly.
+    const fusedScores = new Map<string, number>();
+    const chunkById = new Map<string, Chunk>();
 
-    // 3. Merge & dedupe — vector chunk wins on id collision
-    const mergedMap = new Map<string, Chunk>();
-    for (const chunk of [...relevantVector, ...bm25Chunks]) {
-      if (!mergedMap.has(chunk.id)) {
-        mergedMap.set(chunk.id, chunk);
-      }
-    }
-    const merged = Array.from(mergedMap.values());
+    relevantVector.forEach((chunk, i) => {
+      fusedScores.set(chunk.id, (fusedScores.get(chunk.id) ?? 0) + 1 / (RRF_K + i + 1));
+      chunkById.set(chunk.id, chunk);
+    });
+    relevantBm25.forEach((chunk, i) => {
+      fusedScores.set(chunk.id, (fusedScores.get(chunk.id) ?? 0) + 1 / (RRF_K + i + 1));
+      if (!chunkById.has(chunk.id)) chunkById.set(chunk.id, chunk);
+    });
 
-    // 5. Per-page diversification on already-filtered set
+    const merged = Array.from(chunkById.values())
+      .map(chunk => ({ ...chunk, similarity: fusedScores.get(chunk.id)! }))
+      .sort((a, b) => b.similarity - a.similarity);
+
+    // 4. Per-page diversification on the fused, ranked set
     const pageCounts = new Map<string, number>();
     const diversified: Chunk[] = [];
     for (const chunk of merged) {
@@ -256,8 +278,9 @@ export async function searchChunks(
 
     if (diversified.length === 0) return [];
 
-    // 5. Neighbor expansion on the diversified set
-    const expanded = await expandNeighbors(client, diversified, workspaceId);
+    // 5. Neighbor expansion on the diversified set — shares pageCounts so
+    // neighbors can't push any page past MAX_CHUNKS_PER_PAGE either
+    const expanded = await expandNeighbors(client, diversified, workspaceId, pageCounts);
 
     // 6. Dedupe again — neighbors may overlap with already-retrieved chunks
     const uniqueMap = new Map<string, Chunk>();

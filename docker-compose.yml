@@ -6,7 +6,7 @@ services:
     image: ghcr.io/tanaythatte17/userflow:latest
     restart: always
     env_file:
-      - ./userflow/.env
+      - ./userFlow/.env
     ports:
       - "127.0.0.1:3002:3000"
 
@@ -15,7 +15,7 @@ services:
     image: ghcr.io/tanaythatte17/serverflow:latest
     restart: always
     env_file:
-      - ./serverflow/.env
+      - ./serverFlow/.env
     ports:
       - "127.0.0.1:3001:3000"
 

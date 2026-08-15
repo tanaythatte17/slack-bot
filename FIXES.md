@@ -2,33 +2,34 @@
 
 Checklist of what to fix before making this repo public. Grouped by priority.
 
-## 🔴 Critical — bugs & security (fix first)
+## 🔴 Critical — bugs & security (fix first) — ✅ done
 
-- [ ] **`serverFlow/src/rag/search.ts:235`** — `scoreThreshold` is referenced but never defined anywhere in the file. This throws a `ReferenceError` at runtime, meaning the vector-relevance filter path is currently broken.
-- [ ] **`userFlow/middleware/protectRoute.ts:35-48`** — workspace-membership authorization check is commented out. Any authenticated user can currently access any workspace's routes/data. Implement it or remove the dead block.
-- [ ] **Plaintext OAuth tokens in DB** — `slack_bot_token`, `notion_token`, `notion_refresh_token` in `userFlow/prisma/schema.prisma` are stored unencrypted. Encrypt at rest (e.g. `pgcrypto` or app-level encryption with a KMS-managed key).
-- [ ] **Sensitive data logged to console**:
-  - `userFlow/service/authService.ts:43` logs the full Slack user object.
-  - `userFlow/service/authService.ts:142` logs the full Notion OAuth token response.
-  - Remove or redact before logging; tokens/PII should never hit stdout/log aggregators.
-- [ ] **`docker-compose.yml`** references `./userflow/.env` and `./serverflow/.env` (lowercase) but the actual directories are `userFlow/` and `serverFlow/` (capital F). Verify this against the real deploy layout — on a case-sensitive filesystem this silently fails to load env vars.
-- [ ] **Remove the `"crypto": "^1.0.1"` npm dependency** in `userFlow/package.json`. It's a deprecated placeholder package that shadows Node's built-in `crypto` module, which the code already uses via `import crypto from "crypto"`.
+- [x] **`serverFlow/src/rag/search.ts:235`** — `scoreThreshold` was referenced but never defined. Fixed: it now filters against the already-defined `MIN_SIMILARITY_FLOOR` constant, which is clearly what was intended.
+- [x] **`userFlow/middleware/protectRoute.ts`** — workspace-membership authorization check was commented out. Re-enabled: requests carrying a `workspaceId` in the JWT now get a real `workspaceMember.findUnique` check and a `403` on no membership.
+- [x] **Plaintext OAuth tokens in DB** — `slack_bot_token`, `notion_token`, `notion_refresh_token` are now encrypted at rest with AES-256-GCM (Node's built-in `crypto`, no new dependency):
+  - `userFlow/utils/crypto.ts` (`encryptToken`/`decryptToken`) and `serverFlow/src/lib/crypto.ts` (`decryptToken` only — serverFlow never writes tokens).
+  - Encrypted on write in `userFlow/service/authService.ts` (Notion token exchange, Slack bot install exchange).
+  - Decrypted on read in `userFlow/service/notionIndexService.ts` (before calling the Notion API) and `serverFlow/src/app.ts` (Bolt `authorize` callback).
+  - `userFlow/controllers/authController.ts`'s `getSession` only checks token presence/length, not the actual value, so it was left untouched — ciphertext is equally valid for a truthiness check.
+  - **Requires a new env var**: `TOKEN_ENCRYPTION_KEY`, a base64-encoded 32-byte key, set identically in both `userFlow/.env` and `serverFlow/.env` (both services need it — userFlow to encrypt/decrypt, serverFlow to decrypt). Generate one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+  - **Operational note**: any tokens already stored in plaintext in an existing dev database will fail to decrypt after this change (they're not in the IV+authTag+ciphertext format). There's no silent-fallback path by design — reconnect Slack/Notion for any existing workspaces after deploying this.
+- [x] **Sensitive data logged to console** — removed the `console.log("Authenticated user:", user)` and `console.log("Notion OAuth response:", notionData)` lines from `authService.ts`.
+- [x] **`docker-compose.yml`** case mismatch — fixed `./userflow/.env` → `./userFlow/.env` and `./serverflow/.env` → `./serverFlow/.env`.
+- [x] **Removed the `"crypto": "^1.0.1"` npm dependency** from `userFlow/package.json` via `npm uninstall crypto` (lockfile updated too). Note: this package could never actually have shadowed the built-in — Node always resolves core modules before `node_modules` — so this was a pure cleanliness fix, not a behavior change.
 
 ## 🟠 Repo structure & first impressions
 
-- [ ] Add a root **`README.md`**: what the project does, the userFlow/serverFlow/frontend split, architecture diagram, setup & run instructions.
-- [ ] Add a **`LICENSE`** file.
-- [ ] Add **`.env.example`** to `userFlow/`, `serverFlow/`, and `frontend/` listing required env vars (no real values).
-- [ ] Fix inconsistent project naming:
-  - `serverFlow/package.json` → `"name": "slackbotfyi"`
-  - `userFlow/package.json` → `"name": "userflow"`
-  - `frontend/package.json` → `"name": "@figma/my-make-file"` (Figma Make scaffold leftover)
-  - Pick one consistent product name and apply it across all three.
-- [ ] Remove/replace Figma Make scaffolding left in `frontend/`:
-  - `frontend/ATTRIBUTIONS.md`
-  - `frontend/guidelines/Guidelines.md` (still contains the unfilled template placeholder text)
-- [ ] Rename `userFlow` / `serverFlow` to something that reflects what they actually are (`userFlow` = API + auth + Notion indexing backend, `serverFlow` = the actual Slack bot/RAG service) or document the split clearly in the README.
-- [ ] Delete `userFlow/src/` — empty, tracked, unused directory.
+- [x] Add a root **`README.md`**: what the project does, the userFlow/serverFlow/frontend split, architecture diagram (mermaid), setup & run instructions.
+- [x] Add a **`LICENSE`** file (MIT).
+- [x] Add **`.env.example`** to `userFlow/`, `serverFlow/`, and `frontend/` — each lists exactly the env vars that service's code actually reads (verified via `process.env.*`/`import.meta.env.*` grep), with comments, no real values.
+- [x] Fix inconsistent project naming — settled on **`slackbotfyi`** as the product name (it was already used in `frontend/README.md` and `serverFlow`'s old package name):
+  - `serverFlow/package.json` → `"slackbotfyi-serverflow"`
+  - `userFlow/package.json` → `"slackbotfyi-userflow"`
+  - `frontend/package.json` → `"slackbotfyi-frontend"` (was `"@figma/my-make-file"`)
+  - `frontend/index.html` `<title>` → `slackbotfyi` (was `"SaaS Landing Page and Dashboard"`, a leftover Figma Make default)
+- [x] Removed Figma Make scaffolding: `frontend/guidelines/Guidelines.md` (empty unfilled template) deleted. `frontend/ATTRIBUTIONS.md` was **kept** — it's a legitimate MIT/Unsplash attribution notice, not scaffolding.
+- [ ] Rename `userFlow` / `serverFlow` folders themselves to something that reflects what they actually are, or document the split clearly in the README — **partially done**: the README now documents the split clearly; the folder names were left as-is to avoid churn (would require updating every import path, the Dockerfiles, and CI workflow for a purely cosmetic gain).
+- [x] Delete `userFlow/src/` — empty, tracked, unused directory.
 - [ ] Consider a root `package.json` / workspace config (pnpm/turborepo) to tie the three apps together as one product instead of three unrelated-looking folders.
 - [ ] Add at least minimal tests, especially around the RAG search/chunking logic — currently there are zero tests anywhere in the repo.
 

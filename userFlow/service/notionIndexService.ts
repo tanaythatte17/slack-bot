@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { Client } from "@notionhq/client";
 import { prisma } from "../lib/prisma";
+import { decryptToken } from "../utils/crypto";
 import {
   getNotionPages,
   extractPageChunks,
@@ -72,7 +73,7 @@ export const indexWorkspaceService = async (
   syncProgressService.start(workspaceId, syncJob.id);
   sseService.sendSyncStatus(userId, "started", "Indexing started");
 
-  const notion = new Client({ auth: workspace.notion_token });
+  const notion = new Client({ auth: decryptToken(workspace.notion_token) });
   let pagesFound = 0;
   let chunksIndexed = 0;
 

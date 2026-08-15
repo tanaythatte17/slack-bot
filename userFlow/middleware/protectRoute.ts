@@ -30,22 +30,21 @@ export const protectRoute = async (req: any, res: any, next: any) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // 4. (IMPORTANT) Validate workspace access
+    // 4. Validate workspace access
+    if (decoded.workspaceId) {
+      const membership = await prisma.workspaceMember.findUnique({
+        where: {
+          user_id_workspace_id: {
+            user_id: decoded.userId,
+            workspace_id: decoded.workspaceId,
+          },
+        },
+      });
 
-    // if (decoded.workspaceId) {
-    //   const membership = await prisma.workspaceMember.findUnique({
-    //     where: {
-    //       user_id_workspace_id: {
-    //         user_id: decoded.userId,
-    //         workspace_id: decoded.workspaceId,
-    //       },
-    //     },
-    //   });
-
-    //   if (!membership) {
-    //     return res.status(403).json({ error: "Access denied to workspace" });
-    //   }
-    // }
+      if (!membership) {
+        return res.status(403).json({ error: "Access denied to workspace" });
+      }
+    }
 
     // 5. Attach to request
     req.user = {
